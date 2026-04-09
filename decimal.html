@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>綜合數學教學工具</title>
+    <style>
+        /* === 共用與導覽列樣式 === */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            background-color: #2c3e50;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-bar button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .nav-bar button:hover {
+            background-color: #bdc3c7;
+        }
+
+        .nav-bar button.active {
+            background-color: #f1c40f;
+            color: #d35400;
+        }
+
+        .app-section {
+            display: none; /* 預設隱藏所有分頁 */
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        .app-section.active {
+            display: flex; /* 顯示目前啟用的分頁 */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === App 1: 小數定位板 專屬樣式 === */
+        #app1 h1 { color: #2c3e50; margin-bottom: 30px; }
+        #app1 .controls { background-color: #fff; padding: 20px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px; font-size: 1.2rem; justify-content: center; }
+        #app1 input[type="number"] { width: 100px; padding: 8px 12px; font-size: 1.2rem; border: 2px solid #bdc3c7; border-radius: 8px; text-align: center; }
+        #app1 select { padding: 8px 12px; font-size: 1.2rem; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; background-color: #fff; }
+        #app1 button { padding: 10px 20px; font-size: 1.1rem; color: white; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; font-weight: bold; }
+        #app1 .btn-start { background-color: #3498db; }
+        #app1 .btn-start:hover { background-color: #2980b9; }
+        #app1 .btn-skip { background-color: #e67e22; }
+        #app1 .btn-skip:hover { background-color: #d35400; }
+        #app1 button:disabled { background-color: #95a5a6 !important; cursor: not-allowed; }
+        #app1 .board { display: flex; background-color: #fff; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow-x: auto; border: 3px solid #34495e; max-width: 100%; }
+        #app1 .column { display: flex; flex-direction: column; min-width: 70px; text-align: center; border-right: 2px solid #ecf0f1; }
+        #app1 .column:last-child { border-right: none; }
+        #app1 .header { background-color: #34495e; color: #fff; padding: 15px 5px; font-size: 1.2rem; font-weight: bold; }
+        #app1 .value { padding: 30px 10px; font-size: 2.5rem; font-weight: bold; color: #2c3e50; background-color: #fff; transition: all 0.1s ease; }
+        #app1 .dot-column { min-width: 40px; }
+        #app1 .dot-column .header { background-color: #e74c3c; }
+        #app1 .dot-column .value { color: #e74c3c; }
+        #app1 .highlight { background-color: #f1c40f !important; color: #d35400 !important; transform: scale(1.15); }
+        #app1 .progress-text { margin-top: 20px; font-size: 1.2rem; color: #7f8c8d; height: 30px; font-weight: bold; }
+
+        /* === App 2: 分數切分 專屬樣式 === */
+        #app2 .container { display: flex; gap: 50px; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); flex-wrap: wrap; justify-content: center; }
+        #app2 .controls { display: flex; flex-direction: column; gap: 20px; min-width: 200px; }
+        #app2 button { padding: 10px 15px; font-size: 16px; cursor: pointer; border: 2px solid #4a90e2; background-color: white; color: #4a90e2; border-radius: 8px; transition: all 0.3s; }
+        #app2 button:hover { background-color: #4a90e2; color: white; }
+        #app2 button:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; background-color: #f9f9f9; }
+        #app2 .step-box { border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; background-color: #fafbfc; }
+        #app2 .visual-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        #app2 .square-container { width: 300px; height: 300px; border: 3px solid #333; background-color: white; display: grid; position: relative; }
+        #app2 .cell { border: 1px solid #eee; box-sizing: border-box; }
+        #app2 .highlighted-main { background-color: rgba(255, 193, 7, 0.6); animation: flash 1.5s ease-in-out 2; }
+        #app2 .highlighted-sub { background-color: #ff5722; animation: flash 1.5s ease-in-out 2; }
+        #app2 .math-area { display: flex; flex-direction: column; gap: 30px; justify-content: center; min-width: 250px; font-size: 24px; }
+        #app2 .math-row { display: flex; align-items: center; gap: 10px; background: #fff8e1; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107; }
+        #app2 .fraction { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; vertical-align: middle; font-size: 22px; margin: 0 5px; }
+        #app2 .fraction .numerator { border-bottom: 2px solid black; padding: 0 5px; }
+        #app2 .fraction .denominator { padding: 0 5px; }
+
+        /* === App 3: 小數乘法練習 專屬樣式 === */
+        #app3 h1 { color: #2c3e50; margin-bottom: 30px; }
+        #app3 .settings { background-color: #fff; padding: 20px 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 40px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+        #app3 select, #app3 button, #app3 input { font-size: 1.2rem; padding: 8px 15px; border-radius: 8px; border: 2px solid #bdc3c7; }
+        #app3 button { background-color: #3498db; color: white; border: none; cursor: pointer; transition: background-color 0.3s; font-weight: bold; }
+        #app3 button:hover { background-color: #2980b9; }
+        #app3 .problem-area { display: flex; align-items: flex-start; gap: 20px; font-size: 2.5rem; font-weight: bold; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+        #app3 .number-box { display: flex; flex-direction: column; align-items: center; background-color: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 120px; }
+        #app3 .operator { display: flex; align-items: center; padding-top: 30px; color: #7f8c8d; }
+        #app3 .explanation { font-size: 1.1rem; color: #e67e22; margin-top: 15px; font-weight: normal; text-align: center; min-height: 1.5em; }
+        #app3 .input-group { display: flex; flex-direction: column; align-items: center; }
+        #app3 input[type="number"] { width: 150px; text-align: center; font-size: 2rem; font-weight: bold; color: #2c3e50; }
+        #app3 #check-btn { background-color: #2ecc71; margin-top: 15px; width: 100%; }
+        #app3 #check-btn:hover { background-color: #27ae60; }
+        #app3 .feedback { font-size: 1.5rem; font-weight: bold; text-align: center; min-height: 60px; margin-top: 20px; padding: 15px 30px; border-radius: 10px; display: none; }
+        #app3 .correct { display: block; background-color: #d5f5e3; color: #27ae60; border: 2px solid #2ecc71; }
+        #app3 .wrong { display: block; background-color: #fadbd8; color: #c0392b; border: 2px solid #e74c3c; }
+        #app3 .hint-text { font-size: 1.2rem; color: #555; margin-top: 10px; font-weight: normal; }
+    </style>
+</head>
+<body>
+
+    <nav class="nav-bar">
+        <button id="nav-app1" class="active" onclick="switchTab('app1')">小數定位板演示</button>
+        <button id="nav-app2" onclick="switchTab('app2')">分數切分視覺化</button>
+        <button id="nav-app3" onclick="switchTab('app3')">小數乘法練習</button>
+    </nav>
+
+    <div id="app1" class="app-section active">
+        <h1>小數定位板演示工具</h1>
+        <div class="controls">
+            選擇
+            <input type="number" id="countInput" value="125" min="1" max="99999">
+            個
+            <select id="unitSelect">
+                <option value="100">100</option>
+                <option value="10">10</option>
+                <option value="1">1</option>
+                <option value="0.1" selected>0.1</option>
+                <option value="0.01">0.01</option>
+                <option value="0.001">0.001</option>
+                <option value="0.0001">0.0001</option>
+            </select>
+            <button id="startBtn" class="btn-start" onclick="startAnimation()">開始演示</button>
+            <button id="skipBtn" class="btn-skip" onclick="skipAnimation()" disabled>直接顯示結果</button>
+        </div>
+        <div class="board" id="board"></div>
+        <div class="progress-text" id="progressText"></div>
+    </div>
+
+    <div id="app2" class="app-section">
+        <div class="container">
+            <div class="controls">
+                <div class="step-box">
+                    <h3>第一步：初次切分</h3>
+                    <button onclick="applyFirstCut(10)">切分為 1/10</button>
+                    <button onclick="applyFirstCut(100)" style="margin-top:10px;">切分為 1/100</button>
+                </div>
+                <div class="step-box">
+                    <h3>第二步：二次切分</h3>
+                    <button id="btn-sub-10" onclick="applySecondCut(10)" disabled>再切分為 1/10</button>
+                    <button id="btn-sub-100" onclick="applySecondCut(100)" style="margin-top:10px;" disabled>再切分為 1/100</button>
+                </div>
+                <button onclick="resetAll()" style="margin-top: 20px; background-color: #f44336; border-color: #f44336; color: white;">重新開始</button>
+            </div>
+            <div class="visual-area">
+                <h3 id="visual-title">完整的 1</h3>
+                <div class="square-container" id="main-square"></div>
+            </div>
+            <div class="math-area">
+                <div class="math-row" id="fraction-math">等待操作...</div>
+                <div class="math-row" id="decimal-math">等待操作...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app3" class="app-section">
+        <h1>✨ 小數乘法練習 ✨</h1>
+        <div class="settings">
+            <div>
+                <label for="unit1">被乘數單位：</label>
+                <select id="unit1">
+                    <option value="1">1</option>
+                    <option value="0.1">0.1</option>
+                    <option value="0.01" selected>0.01</option>
+                    <option value="0.001">0.001</option>
+                </select>
+            </div>
+            <div>
+                <label for="unit2">乘數單位：</label>
+                <select id="unit2">
+                    <option value="1">1</option>
+                    <option value="0.1" selected>0.1</option>
+                    <option value="0.01">0.01</option>
+                    <option value="0.001">0.001</option>
+                </select>
+            </div>
+            <button onclick="generateProblem()">產生新題目</button>
+        </div>
+
+        <div class="problem-area">
+            <div class="number-box">
+                <span id="num1-display">0</span>
+                <div class="explanation" id="exp1-display"></div>
+            </div>
+            <div class="operator">×</div>
+            <div class="number-box">
+                <span id="num2-display">0</span>
+                <div class="explanation" id="exp2-display"></div>
+            </div>
+            <div class="operator">=</div>
+            <div class="number-box input-group">
+                <input type="number" id="answer-input" step="any" placeholder="?">
+                <button id="check-btn" onclick="checkAnswer()">送出答案</button>
+                <div class="explanation" id="exp-answer-display"></div>
+            </div>
+        </div>
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 導覽切換邏輯
+        // ==========================================
+        function switchTab(tabId) {
+            // 隱藏所有區塊並移除 nav 按鈕的 active 狀態
+            document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-bar button').forEach(el => el.classList.remove('active'));
+            
+            // 顯示選擇的區塊並將對應的按鈕加上 active 狀態
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+        }
+
+        // ==========================================
+        // App 1 (小數定位板) 邏輯
+        // ==========================================
+        const placeValues = [
+            { id: 'tenThousands', name: '萬位' },
+            { id: 'thousands', name: '千位' },
+            { id: 'hundreds', name: '百位' },
+            { id: 'tens', name: '十位' },
+            { id: 'ones', name: '個位' },
+            { id: 'dot', name: '‧', isDot: true },
+            { id: 'tenths', name: '十分位' },
+            { id: 'hundredths', name: '百分位' },
+            { id: 'thousandths', name: '千分位' },
+            { id: 'tenThousandths', name: '萬分位' }
+        ];
+
+        let isAnimating = false;
+        let isSkipping = false;
+
+        function initBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            placeValues.forEach(pv => {
+                const col = document.createElement('div');
+                col.className = `column ${pv.isDot ? 'dot-column' : ''}`;
+                col.innerHTML = `
+                    <div class="header">${pv.name}</div>
+                    <div class="value" id="val-${pv.id}">${pv.isDot ? '.' : ''}</div>
+                `;
+                board.appendChild(col);
+            });
+        }
+
+        function clearBoard() {
+            placeValues.forEach(pv => {
+                if (!pv.isDot) {
+                    document.getElementById(`val-${pv.id}`).innerText = '';
+                    document.getElementById(`val-${pv.id}`).className = 'value';
+                }
+            });
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        function skipAnimation() {
+            if (isAnimating) isSkipping = true;
+        }
+
+        async function startAnimation() {
+            if (isAnimating) return;
+            
+            const count = parseInt(document.getElementById('countInput').value);
+            const unit = parseFloat(document.getElementById('unitSelect').value);
+            const unitString = document.getElementById('unitSelect').value;
+            
+            if (isNaN(count) || count <= 0) {
+                alert("請輸入有效的數字！");
+                return;
+            }
+
+            isAnimating = true;
+            isSkipping = false;
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('skipBtn').disabled = false;
+            
+            clearBoard();
+
+            const decimals = unitString.includes('.') ? unitString.split('.')[1].length : 0;
+
+            for (let i = 1; i <= count; i++) {
+                if (isSkipping) {
+                    const finalVal = (count * Math.round(unit * 10000)) / 10000;
+                    updateDisplay(finalVal, decimals, false);
+                    document.getElementById('progressText').innerText = `已跳過動畫。總共是 ${count} 個 ${unitString}`;
+                    break;
+                }
+
+                const currentVal = (i * Math.round(unit * 10000)) / 10000;
+                const isCarry = (i % 10 === 0);
+                const isMajorCarry = (i % 100 === 0);
+
+                updateDisplay(currentVal, decimals, isCarry);
+                document.getElementById('progressText').innerText = `目前累積: ${i} 個 ${unitString}`;
+
+                if (isMajorCarry) {
+                    await sleep(900);
+                } else if (isCarry) {
+                    await sleep(500);
+                } else {
+                    await sleep(30);
+                }
+
+                if (isCarry) removeHighlight();
+            }
+
+            if (!isSkipping) {
+                document.getElementById('progressText').innerText = `演示完成！總共是 ${count} 個 ${unitString}`;
+            }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('skipBtn').disabled = true;
+            isAnimating = false;
+        }
+
+        function updateDisplay(value, decimals, isCarry) {
+            const valStr = value.toFixed(decimals);
+            const parts = valStr.split('.');
+            
+            const intPart = parts[0].padStart(5, ' '); 
+            const decPart = (parts[1] || '').padEnd(4, ' ');
+
+            const digitMap = {
+                'tenThousands': intPart[0],
+                'thousands': intPart[1],
+                'hundreds': intPart[2],
+                'tens': intPart[3],
+                'ones': intPart[4],
+                'tenths': decPart[0],
+                'hundredths': decPart[1],
+                'thousandths': decPart[2],
+                'tenThousandths': decPart[3]
+            };
+
+            for (const [key, char] of Object.entries(digitMap)) {
+                const el = document.getElementById(`val-${key}`);
+                const displayChar = char.trim() === '' ? '' : char;
+                
+                if (el.innerText !== displayChar && displayChar !== '') {
+                    el.innerText = displayChar;
+                    if (isCarry && !isSkipping) {
+                        el.classList.add('highlight');
+                    }
+                } else if (displayChar === '') {
+                    el.innerText = '';
+                }
+            }
+        }
+
+        function removeHighlight() {
+            placeValues.forEach(pv => {
+                if (!pv.isDot) {
+                    document.getElementById(`val-${pv.id}`).classList.remove('highlight');
+                }
+            });
+        }
+
+
+        // ==========================================
+        // App 2 (分數切分) 邏輯
+        // ==========================================
+        const mainSquare = document.getElementById('main-square');
+        const fractionMath = document.getElementById('fraction-math');
+        const decimalMath = document.getElementById('decimal-math');
+        const visualTitle = document.getElementById('visual-title');
+        
+        let firstCutValue = 1;
+        let secondCutValue = 1;
+
+        function createFractionHTML(num, den) {
+            return `
+                <div class="fraction">
+                    <span class="numerator">${num}</span>
+                    <span class="denominator">${den}</span>
+                </div>
+            `;
+        }
+
+        function applyFirstCut(val) {
+            firstCutValue = val;
+            secondCutValue = 1; 
+            mainSquare.innerHTML = ''; 
+
+            document.getElementById('btn-sub-10').disabled = false;
+            document.getElementById('btn-sub-100').disabled = false;
+
+            visualTitle.innerText = `第一次切分：閃爍區塊為 1/${val}`;
+
+            if (val === 10) {
+                mainSquare.style.gridTemplateColumns = `repeat(10, 1fr)`;
+                mainSquare.style.gridTemplateRows = `1fr`;
+            } else if (val === 100) {
+                mainSquare.style.gridTemplateColumns = `repeat(10, 1fr)`;
+                mainSquare.style.gridTemplateRows = `repeat(10, 1fr)`;
+            }
+
+            for (let i = 0; i < val; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                if (i === 0) {
+                    cell.id = 'highlighted-cell';
+                    cell.classList.add('highlighted-main');
+                }
+                mainSquare.appendChild(cell);
+            }
+
+            updateMathDisplay(1);
+        }
+
+        function applySecondCut(val) {
+            secondCutValue = val;
+            let highlightedCell = document.getElementById('highlighted-cell');
+            
+            highlightedCell.innerHTML = '';
+            highlightedCell.style.display = 'grid';
+
+            visualTitle.innerText = `二次切分：橘色區塊為 1/${firstCutValue * secondCutValue}`;
+
+            if (val === 10) {
+                highlightedCell.style.gridTemplateColumns = `1fr`;
+                highlightedCell.style.gridTemplateRows = `repeat(10, 1fr)`;
+            } else if (val === 100) {
+                highlightedCell.style.gridTemplateColumns = `repeat(10, 1fr)`;
+                highlightedCell.style.gridTemplateRows = `repeat(10, 1fr)`;
+            }
+
+            for (let i = 0; i < val; i++) {
+                let subCell = document.createElement('div');
+                subCell.style.border = '0.5px solid rgba(0,0,0,0.1)';
+                if (i === 0) {
+                    subCell.classList.add('highlighted-sub');
+                }
+                highlightedCell.appendChild(subCell);
+            }
+
+            updateMathDisplay(2);
+        }
+
+        function updateMathDisplay(step) {
+            let dec1 = (1 / firstCutValue).toString();
+            
+            if (step === 1) {
+                fractionMath.innerHTML = `目前： ${createFractionHTML(1, firstCutValue)}`;
+                decimalMath.innerHTML = `目前： ${dec1}`;
+            } else if (step === 2) {
+                let totalDen = firstCutValue * secondCutValue;
+                let dec2 = (1 / secondCutValue).toString();
+                let totalDec = (1 / totalDen).toString(); 
+
+                fractionMath.innerHTML = `
+                    ${createFractionHTML(1, firstCutValue)} × ${createFractionHTML(1, secondCutValue)} = ${createFractionHTML(1, totalDen)}
+                `;
+                decimalMath.innerHTML = `
+                    ${dec1} × ${dec2} = ${totalDec}
+                `;
+            }
+        }
+
+        function resetAll() {
+            firstCutValue = 1;
+            secondCutValue = 1;
+            mainSquare.innerHTML = '';
+            mainSquare.style.gridTemplateColumns = '1fr';
+            mainSquare.style.gridTemplateRows = '1fr';
+            
+            document.getElementById('btn-sub-10').disabled = true;
+            document.getElementById('btn-sub-100').disabled = true;
+
+            fractionMath.innerHTML = '等待操作...';
+            decimalMath.innerHTML = '等待操作...';
+            visualTitle.innerText = '完整的 1';
+        }
+
+
+        // ==========================================
+        // App 3 (小數乘法) 邏輯
+        // ==========================================
+        let currentProblem = {};
+
+        function getExplanation(numStr) {
+            let num = parseFloat(numStr);
+            let str = num.toString();
+            
+            if (str.includes('.')) {
+                let decimalPart = str.split('.')[1];
+                let places = decimalPart.length;
+                let unitStr = "0." + "0".repeat(places - 1) + "1";
+                let count = parseInt(str.replace('.', ''), 10); 
+                return { text: `${count} 個 ${unitStr}`, count: count, unit: unitStr, places: places };
+            } else {
+                return { text: `${str} 個 1`, count: parseInt(str, 10), unit: "1", places: 0 };
+            }
+        }
+
+        function accurateMultiply(a, b) {
+            return parseFloat((a * b).toPrecision(12));
+        }
+
+        function generateProblem() {
+            document.getElementById('answer-input').value = '';
+            document.getElementById('exp-answer-display').innerText = '';
+            let feedback = document.getElementById('feedback');
+            feedback.style.display = 'none';
+            feedback.className = 'feedback';
+            feedback.innerHTML = '';
+
+            const unit1 = parseFloat(document.getElementById('unit1').value);
+            const unit2 = parseFloat(document.getElementById('unit2').value);
+
+            const count1 = Math.floor(Math.random() * 99) + 1;
+            const count2 = Math.floor(Math.random() * 99) + 1;
+
+            const n1 = accurateMultiply(count1, unit1);
+            const n2 = accurateMultiply(count2, unit2);
+
+            currentProblem = {
+                n1: n1,
+                n2: n2,
+                answer: accurateMultiply(n1, n2),
+                exp1: getExplanation(n1.toString()),
+                exp2: getExplanation(n2.toString())
+            };
+
+            document.getElementById('num1-display').innerText = n1;
+            document.getElementById('exp1-display').innerText = currentProblem.exp1.text;
+            document.getElementById('num2-display').innerText = n2;
+            document.getElementById('exp2-display').innerText = currentProblem.exp2.text;
+        }
+
+        function checkAnswer() {
+            const inputVal = document.getElementById('answer-input').value;
+            const feedback = document.getElementById('feedback');
+            const expAnswerDisplay = document.getElementById('exp-answer-display');
+            
+            if (inputVal === '') {
+                alert('請先輸入答案喔！');
+                return;
+            }
+
+            const studentExp = getExplanation(inputVal);
+            expAnswerDisplay.innerText = studentExp.text;
+
+            const studentAnswer = parseFloat(inputVal);
+
+            if (studentAnswer === currentProblem.answer) {
+                feedback.className = 'feedback correct';
+                feedback.innerHTML = '🎉 答對了！非常棒！';
+            } else {
+                const hintCount = currentProblem.exp1.count * currentProblem.exp2.count;
+                const hintUnit = accurateMultiply(parseFloat(currentProblem.exp1.unit), parseFloat(currentProblem.exp2.unit));
+                
+                feedback.className = 'feedback wrong';
+                feedback.innerHTML = `
+                    再試一次看看！💪
+                    <div class="hint-text">
+                        <b>小提示：</b><br>
+                        整數部分相乘： ${currentProblem.exp1.count} × ${currentProblem.exp2.count} = ${hintCount}<br>
+                        單位部分相乘： ${currentProblem.exp1.unit} × ${currentProblem.exp2.unit} = ${hintUnit}<br>
+                        所以答案應該是 <b>${hintCount} 個 ${hintUnit}</b> 喔！
+                    </div>
+                `;
+            }
+            feedback.style.display = 'block';
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        // ==========================================
+        // 頁面初始化
+        // ==========================================
+        window.onload = () => {
+            initBoard();        // 載入定位板結構
+            generateProblem();  // 產生第一題小數乘法
+        };
+
+    </script>
+</body>
+</html>
